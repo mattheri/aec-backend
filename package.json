@@ -8,7 +8,7 @@
   "scripts": {
     "build": "npx @nestjs/cli build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "npx @nestjs/cli start",
+    "start": "npx @nestjs/cli start:prod",
     "start:dev": "npx @nestjs/cli start --watch",
     "start:debug": "npx @nestjs/cli start --debug --watch",
     "start:prod": "node dist/main",
