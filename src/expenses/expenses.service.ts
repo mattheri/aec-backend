@@ -7,6 +7,9 @@ import { Model } from 'mongoose';
 import { UsersService } from 'src/users/users.service';
 import { ExpenseQueryFilter } from './entities/expense.entity';
 import { UpdateManyExpenseDto } from './dto/update-many-expense.dto';
+import { UserErrorCodes } from 'src/users/interfaces/users.interfaces';
+import { Expense as ExpenseEntity } from "./entities/expense.entity";
+import { ExpenseErrorCodes } from './interfaces/expense.interface';
 
 @Injectable()
 export class ExpensesService {
@@ -15,17 +18,20 @@ export class ExpensesService {
     private readonly userService: UsersService,
   ) { }
 
-  async create(createExpenseDto: CreateExpenseDto): Promise<Expense> {
-    if (!createExpenseDto.user) throw new HttpException("User is required", HttpStatus.BAD_REQUEST);
-    if (!await this.userService.exists({ _id: createExpenseDto.user })) throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+  async create(createExpenseDto: CreateExpenseDto) {
+    if (!createExpenseDto.user) throw new HttpException(UserErrorCodes.NO_ID_PROVIDED, HttpStatus.BAD_REQUEST);
+    if (!await this.userService.exists({ _id: createExpenseDto.user })) throw new HttpException(UserErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-    return this.expenseModel.create(createExpenseDto);
+    const expense = (await this.expenseModel.create(createExpenseDto)).toObject();
+    return new ExpenseEntity(expense);
   }
 
-  async createMany(createExpenseDto: CreateExpenseDto[]): Promise<Expense[]> {
-    if (!createExpenseDto.some(async (e) => await this.userService.exists({ _id: e.user }))) throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+  async createMany(createExpenseDto: CreateExpenseDto[]) {
+    if (!createExpenseDto.some(async (e) => await this.userService.exists({ _id: e.user }))) throw new HttpException(UserErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-    return this.expenseModel.create(createExpenseDto);
+    const expenses = await this.expenseModel.create(createExpenseDto);
+
+    return expenses.map((e) => new ExpenseEntity(e.toObject()));
   }
 
   async findAll(
@@ -36,7 +42,7 @@ export class ExpensesService {
       throw new HttpException("User not found", HttpStatus.NOT_FOUND);
     }
 
-    const query = this.expenseModel.find<Expense>({ user, archived: false });
+    const query = this.expenseModel.find({ user, archived: false });
     if (limit) query.limit(limit);
     if (offset) query.skip(offset);
     if (sort) {
@@ -45,39 +51,49 @@ export class ExpensesService {
       else query.sort({ [field]: -1 });
     }
 
-    return query.exec();
+    return (await query.exec()).map(e => new ExpenseEntity(e.toObject()));
   }
 
-  findOne(id: string) {
-    return this.expenseModel.findById<Expense>(id).exec();
+  async findOne(id: string) {
+    const expense = (await this.expenseModel.findById(id).exec()).toObject();
+    if (!expense) throw new HttpException(ExpenseErrorCodes.EXPENSE_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    return new ExpenseEntity(expense);
   }
 
-  update(id: number, updateExpenseDto: UpdateExpenseDto) {
-    return this.expenseModel.findByIdAndUpdate<Expense>(id, updateExpenseDto, { new: true }).exec();
+  async update(id: string, updateExpenseDto: UpdateExpenseDto) {
+    const expense = (await this.expenseModel.findByIdAndUpdate(id, updateExpenseDto, { new: true }).exec()).toObject();
+    if (!expense) throw new HttpException(ExpenseErrorCodes.EXPENSE_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    return new ExpenseEntity(expense);
   }
 
   updateMany(updateManyExpenseDto: UpdateManyExpenseDto[]) {
     return Promise.all(updateManyExpenseDto.map(async (e) => {
-      const expense = await this.expenseModel.findById<Expense>(e._id).exec();
-      if (!expense) throw new HttpException("Expense not found", HttpStatus.NOT_FOUND);
+      const exists = await this.expenseModel.exists({ _id: e._id });
+      if (!exists) throw new HttpException(ExpenseErrorCodes.EXPENSE_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-      return this.expenseModel.findByIdAndUpdate<Expense>(e._id, e, { new: true }).exec();
+      const expense = (await this.expenseModel.findByIdAndUpdate(e._id, e, { new: true }).exec()).toObject();
+
+      return new ExpenseEntity(expense);
     }));
   }
 
   async remove(id: string) {
-    const expense = await this.expenseModel.findById<Expense>(id).exec();
-    if (!expense) throw new HttpException("Expense not found", HttpStatus.NOT_FOUND);
+    const exists = await this.expenseModel.exists({ _id: id });
+    if (!exists) throw new HttpException(ExpenseErrorCodes.EXPENSE_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-    return this.expenseModel.findByIdAndUpdate<Expense>(id, { archived: true }, { new: true }).exec();
+    const expense = (await this.expenseModel.findByIdAndUpdate(id, { archived: true }, { new: true }).exec()).toObject();
+    return new ExpenseEntity(expense);
   }
 
   async removeMany(ids: string[]) {
     return Promise.all(ids.map(async (id) => {
-      const expense = await this.expenseModel.findById<Expense>(id).exec();
-      if (!expense) throw new HttpException("Expense not found", HttpStatus.NOT_FOUND);
+      const exists = await this.expenseModel.exists({ _id: id });
+      if (!exists) throw new HttpException("Expense not found", HttpStatus.NOT_FOUND);
 
-      return this.expenseModel.findByIdAndUpdate<Expense>(id, { archived: true }, { new: true }).exec();
+      const expense = (await this.expenseModel.findByIdAndUpdate(id, { archived: true }, { new: true }).exec()).toObject();
+      return new ExpenseEntity(expense);
     }));
   }
 }

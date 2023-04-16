@@ -1,3 +1,5 @@
+import { Transform } from "class-transformer";
+
 export type IncomeRecursion = {
 	from: Date;
 	to: Date;
@@ -5,14 +7,20 @@ export type IncomeRecursion = {
 }
 
 export class Income {
+	@Transform(({ obj }) => obj._id.toString())
 	_id: string;
 	description: string;
 	amount: number;
-	date: Date;
+	@Transform(({ value }) => new Date(value))
+	date: number;
 	isRecurring: boolean;
 	recursion?: IncomeRecursion;
 	user: string;
 	archived: boolean;
+
+	constructor(income: Partial<Income>) {
+		Object.assign(this, income);
+	}
 }
 
 export type Sort = "date:asc" | "date:desc" | "amount:asc" | "amount:desc";
@@ -21,4 +29,8 @@ export type IncomeQueryFilter = {
 	limit?: number;
 	offset?: number;
 	sort?: Sort;
+}
+
+export enum IncomeErrorCodes {
+	INCOME_NOT_FOUND = "INCOME_NOT_FOUND",
 }

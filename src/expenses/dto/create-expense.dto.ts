@@ -22,8 +22,17 @@ export class CreateExpenseDto {
 	@Min(0)
 	amount: number;
 
-	@IsDateString()
+	@IsNumber()
 	@IsOptional()
+	@Transform(({ value }) => {
+		if (value && value instanceof Date) {
+			return value.getTime();
+		} else if (value && typeof value === 'string') {
+			return new Date(value).getTime();
+		}
+
+		return value;
+	})
 	date: Date;
 
 	@IsBoolean()

@@ -5,8 +5,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Income } from './incomes.schema';
 import { Model } from 'mongoose';
 import { UsersService } from 'src/users/users.service';
-import { IncomeQueryFilter } from './entities/income.entity';
+import { IncomeErrorCodes, IncomeQueryFilter } from './entities/income.entity';
 import { UpdateManyIncomeDto } from './dto/update-many-expense.dto';
+import { Income as IncomeEntity } from "./entities/income.entity";
+import { UserErrorCodes } from 'src/users/interfaces/users.interfaces';
 
 @Injectable()
 export class IncomesService {
@@ -15,17 +17,18 @@ export class IncomesService {
     private userService: UsersService,
   ) { }
 
-  async create(createIncomeDto: CreateIncomeDto): Promise<Income> {
-    if (!createIncomeDto.user) throw new HttpException("User is required", HttpStatus.BAD_REQUEST);
-    if (!await this.userService.exists({ _id: createIncomeDto.user })) throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+  async create(createIncomeDto: CreateIncomeDto) {
+    if (!createIncomeDto.user) throw new HttpException(UserErrorCodes.NO_ID_PROVIDED, HttpStatus.BAD_REQUEST);
+    if (!await this.userService.exists({ _id: createIncomeDto.user })) throw new HttpException(UserErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-    return this.incomeModel.create(createIncomeDto);
+    const income = (await this.incomeModel.create(createIncomeDto)).toObject();
+    return new IncomeEntity(income);
   }
 
-  async createMany(createIncomeDto: CreateIncomeDto[]): Promise<Income[]> {
-    if (!createIncomeDto.some(async (e) => await this.userService.exists({ _id: e.user }))) throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+  async createMany(createIncomeDto: CreateIncomeDto[]) {
+    if (!createIncomeDto.some(async (e) => await this.userService.exists({ _id: e.user }))) throw new HttpException(UserErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-    return this.incomeModel.create(createIncomeDto);
+    return (await this.incomeModel.create(createIncomeDto)).map((e) => new IncomeEntity(e.toObject()));
   }
 
   async findAll(
@@ -45,39 +48,48 @@ export class IncomesService {
       else query.sort({ [field]: -1 });
     }
 
-    return query.exec();
+    return (await query.exec()).map((e) => new IncomeEntity(e.toObject()));
   }
 
-  findOne(id: string) {
-    return this.incomeModel.findById<Income>(id).exec();
+  async findOne(id: string) {
+    const income = (await this.incomeModel.findById(id).exec()).toObject();
+    if (!income) throw new HttpException(IncomeErrorCodes.INCOME_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    return new IncomeEntity(income);
   }
 
-  update(id: number, updateIncomeDto: UpdateIncomeDto) {
-    return this.incomeModel.findByIdAndUpdate<Income>(id, updateIncomeDto, { new: true }).exec();
+  async update(id: string, updateIncomeDto: UpdateIncomeDto) {
+    const income = (await this.incomeModel.findByIdAndUpdate(id, updateIncomeDto, { new: true }).exec()).toObject();
+    if (!income) throw new HttpException(IncomeErrorCodes.INCOME_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    return new IncomeEntity(income);
   }
 
-  updateMany(updateManyIncomeDto: UpdateManyIncomeDto[]) {
-    return Promise.all(updateManyIncomeDto.map(async (e) => {
-      const Income = await this.incomeModel.findById<Income>(e._id).exec();
-      if (!Income) throw new HttpException("Income not found", HttpStatus.NOT_FOUND);
+  async updateMany(updateManyIncomeDto: UpdateManyIncomeDto[]) {
+    return Promise.all(updateManyIncomeDto.map(async (i) => {
+      const exists = await this.incomeModel.exists({ _id: i._id });
+      if (!exists) throw new HttpException(IncomeErrorCodes.INCOME_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-      return this.incomeModel.findByIdAndUpdate<Income>(e._id, e, { new: true }).exec();
+      const income = (await this.incomeModel.findByIdAndUpdate(i._id, i, { new: true }).exec()).toObject();
+      return new IncomeEntity(income);
     }));
   }
 
   async remove(id: string) {
-    const Income = await this.incomeModel.findById<Income>(id).exec();
-    if (!Income) throw new HttpException("Income not found", HttpStatus.NOT_FOUND);
+    const exists = await this.incomeModel.exists({ _id: id });
+    if (!exists) throw new HttpException(IncomeErrorCodes.INCOME_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-    return this.incomeModel.findByIdAndUpdate<Income>(id, { archived: true }, { new: true }).exec();
+    const income = (await this.incomeModel.findByIdAndUpdate(id, { archived: true }, { new: true }).exec()).toObject();
+    return new IncomeEntity(income);
   }
 
   async removeMany(ids: string[]) {
     return Promise.all(ids.map(async (id) => {
-      const Income = await this.incomeModel.findById<Income>(id).exec();
-      if (!Income) throw new HttpException("Income not found", HttpStatus.NOT_FOUND);
+      const exists = await this.incomeModel.exists({ _id: id });
+      if (!exists) throw new HttpException(IncomeErrorCodes.INCOME_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-      return this.incomeModel.findByIdAndUpdate<Income>(id, { archived: true }, { new: true }).exec();
+      const income = (await this.incomeModel.findByIdAndUpdate(id, { archived: true }, { new: true }).exec()).toObject();
+      return new IncomeEntity(income);
     }));
   }
 }

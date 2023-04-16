@@ -11,7 +11,7 @@ export class Income extends Document {
 	amount: number;
 
 	@Prop({ default: Date.now() })
-	date: Date;
+	date: number;
 
 	@Prop({ default: false })
 	isRecurring: boolean;
