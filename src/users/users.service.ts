@@ -37,6 +37,15 @@ export class UsersService {
 
   async update(query: FindOneUserArguments, updateUserDto: UpdateUserDto) {
     if (!query.username && !query._id) throw new HttpException(UserErrorCodes.NO_ID_OR_USERNAME, HttpStatus.BAD_REQUEST);
+
+    if (updateUserDto.password) {
+      const hash = await this.encryptionService.hash(updateUserDto.password);
+      delete updateUserDto.password;
+
+      const user = (await this.userModel.findOneAndUpdate(query, { ...updateUserDto, hash }, { new: true })).toObject();
+      return new UserEntity(user);
+    }
+
     const user = (await this.userModel.findOneAndUpdate(query, updateUserDto, { new: true })).toObject();
     return new UserEntity(user);
   }
