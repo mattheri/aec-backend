@@ -12,6 +12,7 @@ import { IncomesModule } from './incomes/incomes.module';
 import { AuthModule } from './auth/auth.module';
 import { EncryptionModule } from './encryption/encryption.module';
 import { TtlThrottlerGuard } from './guards/ttl-throttler.guard';
+import { UserConfigModule } from './user-config/user-config.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { TtlThrottlerGuard } from './guards/ttl-throttler.guard';
     IncomesModule,
     EncryptionModule,
     AuthModule,
+    UserConfigModule,
   ],
   controllers: [AppController],
   providers: [AppService, {
