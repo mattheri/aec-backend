@@ -22,7 +22,6 @@ export class UserConfigController {
     @Param('id') id: string,
     @Body() updateUserConfigDto: UpdateUserConfigDto,
   ) {
-    console.log('updateUserConfigDto', updateUserConfigDto);
     return this.userConfigService.update(id, updateUserConfigDto);
   }
 }

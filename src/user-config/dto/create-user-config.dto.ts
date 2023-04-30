@@ -4,13 +4,13 @@ import {
   DefaultSort,
 } from '../interfaces/user-config.interface';
 
-const defaultSorts = [
-  'dateAsc',
-  'dateDesc',
-  'amountAsc',
-  'amountDesc',
+export const defaultSorts = [
+  'date:asc',
+  'date:desc',
+  'amount:asc',
+  'amount:desc',
 ] as const;
-const defaultDateFilters = ['month', 'week'] as const;
+export const defaultDateFilters = ['month', 'week'] as const;
 
 export class CreateUserConfigDto {
   @IsString()

@@ -1,2 +1,6 @@
-export type DefaultSort = 'dateAsc' | 'dateDesc' | 'amountAsc' | 'amountDesc';
+export type DefaultSort =
+  | 'date:asc'
+  | 'date:desc'
+  | 'amount:asc'
+  | 'amount:desc';
 export type DefaultDateFilter = 'month' | 'week';

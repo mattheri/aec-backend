@@ -4,14 +4,10 @@ import {
   DefaultDateFilter,
   DefaultSort,
 } from '../interfaces/user-config.interface';
-
-const defaultSorts = [
-  'dateAsc',
-  'dateDesc',
-  'amountAsc',
-  'amountDesc',
-] as const;
-const defaultDateFilters = ['month', 'week'] as const;
+import {
+  defaultDateFilters,
+  defaultSorts,
+} from '../dto/create-user-config.dto';
 
 export class UserConfig {
   @Transform(({ obj }) => obj._id.toString())
