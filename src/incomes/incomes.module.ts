@@ -4,6 +4,7 @@ import { IncomesController } from './incomes.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Income, IncomeSchema } from './incomes.schema';
 import { UsersModule } from 'src/users/users.module';
+import { TimelineModule } from 'src/timeline/timeline.module';
 
 @Module({
   controllers: [IncomesController],
@@ -11,6 +12,7 @@ import { UsersModule } from 'src/users/users.module';
   imports: [
     MongooseModule.forFeature([{ name: Income.name, schema: IncomeSchema }]),
     UsersModule,
-  ]
+    TimelineModule,
+  ],
 })
-export class IncomesModule { }
+export class IncomesModule {}

@@ -13,6 +13,7 @@ import { AuthModule } from './auth/auth.module';
 import { EncryptionModule } from './encryption/encryption.module';
 import { TtlThrottlerGuard } from './guards/ttl-throttler.guard';
 import { UserConfigModule } from './user-config/user-config.module';
+import { TimelineService } from './timeline/timeline.service';
 
 @Module({
   imports: [
@@ -43,7 +44,7 @@ import { UserConfigModule } from './user-config/user-config.module';
   }, {
       provide: APP_GUARD,
       useClass: TtlThrottlerGuard,
-    }],
+    }, TimelineService],
 })
 export class AppModule { }
 

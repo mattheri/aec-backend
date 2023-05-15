@@ -1,8 +1,8 @@
 import { Transform } from 'class-transformer';
 
 export type ExpenseRecursion = {
-  from: Date;
-  to: Date;
+  from: number;
+  to: number;
   period: number;
 };
 
